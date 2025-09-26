@@ -1,0 +1,482 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+% ---------- Packages ----------
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{capt-of} % for \captionof outside float
+\usepackage{stfloats}   % allow two-column floats at the bottom
+\usepackage{balance}    % (optional) balance the reference columns
+
+% Keep hyperref last
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+
+% ---------- BibTeX shortcut ----------
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+% ---------- Listings styles ----------
+\lstdefinestyle{shell}{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true, showstringspaces=false,
+  columns=fullflexible
+}
+\lstdefinestyle{json}{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true, showstringspaces=false
+}
+
+\begin{document}
+
+\title{Budget Planner: A Microservices Application}
+
+\author{\IEEEauthorblockN{Dilshaan} % Replace with your name
+\IEEEauthorblockA{\textit{your.email@example.com}}} % Replace with your email
+
+\maketitle
+
+\begin{abstract}
+This paper presents the design and implementation of \emph{Budget Planner}, a personal finance management application built using microservices architecture and deployed on Kubernetes. The system addresses the growing need for secure, scalable budget tracking solutions by implementing two core microservices: an authentication service for user management and a budget service for financial data handling. The application demonstrates modern cloud-native development practices including containerization with Docker, orchestration through Kubernetes, and persistent data storage using MongoDB with PersistentVolumeClaim. Key features include JWT-based authentication, bcrypt password hashing, real-time data visualization, and independent horizontal scaling capabilities. The implementation showcases how microservices can be effectively orchestrated to create a cohesive user experience while maintaining clear separation of concerns and operational resilience.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Microservices, Kubernetes, Docker, Flask, REST API, Horizontal Scaling, Persistent Storage, MongoDB, JWT, bcrypt
+\end{IEEEkeywords}
+
+\noindent\textbf{GitHub link: }
+\href{https://github.com/md-d-cdr-4304/budget-planner}{Budget Planner Repository}\\
+% \noindent\textbf{Google Drive link: }
+% \href{https://drive.google.com/file/d/1TAt1p06mjiPEh4Ba6u8xh_Ec1Rdtskv0/view?usp=sharing}{Video Recording} % Remove or update if you have a video for Budget Planner
+\\[2mm]
+
+% =========================================================
+\section{\textbf{Description of the Software}}
+The \emph{Budget Planner} application represents a practical solution to personal finance management, designed to help users track their monthly budgets and daily expenses through an intuitive web interface. Built with modern microservices architecture principles, the application demonstrates how complex business logic can be decomposed into manageable, independently scalable components.
+
+The system addresses real-world financial management needs by providing users with comprehensive tools for budget planning and expense tracking. Users can create detailed monthly budgets across different categories, log daily expenses with descriptions and categories, and visualize their spending patterns through interactive charts and analytics. The application's modern interface includes features such as dark mode, search functionality, date filtering, and bulk operations, making it both functional and user-friendly.
+
+From a technical perspective, the application showcases the practical implementation of cloud-native development practices. The microservices architecture enables independent development and deployment cycles, while Kubernetes orchestration ensures high availability and automatic scaling. The use of JWT-based authentication and bcrypt password hashing demonstrates modern security practices, while MongoDB with persistent storage ensures data reliability across system restarts.
+
+The application successfully meets all assignment requirements by implementing two distinct microservices (Budget Service and Auth Service) plus a MongoDB database, each with comprehensive REST API endpoints. The system is fully deployable on Kubernetes, accessible via web browser through NodePort services, and demonstrates independent horizontal scaling capabilities. All container images are published on Docker Hub, and the database utilizes persistent storage to ensure data survival across infrastructure restarts.
+
+% =========================================================
+\section{\textbf{Software Architecture Design}}
+The \emph{Budget Planner} application follows a microservices architecture pattern with clear separation of concerns and cloud-native design principles. The system is deployed in the \texttt{budget-planner} namespace and consists of two distinct microservices plus a MongoDB database, each with well-defined responsibilities and independent scaling capabilities.
+
+\subsection{Architecture Principles and Patterns}
+The application implements several key cloud architecture patterns that enable scalability, maintainability, and operational excellence. The microservices architecture ensures each service has a single responsibility and can be developed, deployed, and scaled independently. The Budget Service acts as an API Gateway, serving as the primary entry point and routing requests to appropriate services. While both services share MongoDB for data persistence, each maintains clear ownership of its data domain. Both microservices are designed to be stateless, enabling horizontal scaling and resilience. Kubernetes DNS provides automatic service discovery within the cluster, while sensitive data is managed through Kubernetes Secrets and ConfigMaps, ensuring security and flexibility.
+
+\subsection{Component Mapping and Responsibilities}
+
+\subsubsection{Budget Service (Flask + UI)}
+\textbf{Responsibility:} Primary user interface and budget/expense management API
+\textbf{Technology Stack:} Python Flask, Jinja2 templates, Bootstrap, Chart.js
+\textbf{REST API Endpoints:} 
+\begin{itemize}
+  \item \texttt{GET /} - Login/Registration page
+  \item \texttt{GET /dashboard} - Budget dashboard (requires authentication)
+  \item \texttt{POST /api/monthly-budgets} - Create monthly budget
+  \item \texttt{GET /api/monthly-budgets} - Retrieve user budgets
+  \item \texttt{PUT /api/monthly-budgets/\{id\}} - Update budget
+  \item \texttt{DELETE /api/monthly-budgets/\{id\}} - Delete budget
+  \item \texttt{POST /api/daily-expenses} - Create daily expense
+  \item \texttt{GET /api/daily-expenses} - Retrieve user expenses
+  \item \texttt{PUT /api/daily-expenses/\{id\}} - Update expense
+  \item \texttt{DELETE /api/daily-expenses/\{id\}} - Delete expense
+\end{itemize}
+\textbf{Deployment Details:} Port 5000 (exposed via NodePort 30000), Image: \texttt{dilshaan/budget-planner-budget:latest}
+
+
+\subsubsection{Auth Service (Flask)}
+\textbf{Responsibility:} User authentication, authorization, and session management
+\textbf{Technology Stack:} Python Flask, JWT tokens, bcrypt password hashing, rate limiting
+\textbf{REST API Endpoints:}
+\begin{itemize}
+  \item \texttt{POST /register} - User registration with password hashing
+  \item \texttt{POST /login} - User authentication and JWT token issuance
+  \item \texttt{POST /verify} - JWT token verification for other services
+  \item \texttt{POST /refresh} - Refresh expired JWT tokens
+  \item \texttt{POST /logout} - Session invalidation and token cleanup
+  \item \texttt{GET /health} - Health check endpoint
+\end{itemize}
+\textbf{Deployment Details:} Port 5001 (internal ClusterIP), Image: \texttt{dilshaan/budget-planner-auth:latest}
+
+\subsubsection{MongoDB (Database Microservice)}
+\textbf{Responsibility:} Data persistence for user accounts, budgets, and expenses
+\textbf{Technology Stack:} MongoDB 6.0, Document-based NoSQL database
+\textbf{Data Collections:}
+\begin{itemize}
+  \item \texttt{users} - User authentication data (username, hashed passwords)
+  \item \texttt{monthly\_budgets} - Monthly budget categories and amounts
+  \item \texttt{daily\_expenses} - Daily expense records with categories
+\end{itemize}
+\textbf{Deployment Details:} Port 27017 (internal ClusterIP), PVC: \texttt{mongodb-pvc} (1Gi), Image: \texttt{mongo:latest}
+
+% =========================================================
+\section{\textbf{Application Workflow}}
+The following steps describe the typical user workflow within the Budget Planner Application, highlighting the interaction between services and demonstrating the microservices architecture in action.
+
+\begin{enumerate}
+  \item \textbf{User Registers or Logs In:}
+  The user's first interaction is with the frontend, served by the \texttt{Budget Service}.
+  \begin{itemize}
+    \item \textbf{API Call:} \texttt{POST /register} or \texttt{POST /login}
+    \item \textbf{Payload:} \texttt{\{ "username": "<username>", "password": "<password>" \}}
+    \item \textbf{Data Flow:} The \texttt{Budget Service} forwards the request to the \texttt{Auth Service}, which validates credentials against the \textbf{MongoDB} database using bcrypt password hashing.
+    \item \textbf{Response:} Success $\rightarrow$ JWT access and refresh tokens are issued, and a session is created.
+  \end{itemize}
+
+  \item \textbf{Accessing the Dashboard:}
+  The user navigates to the main application interface.
+  \begin{itemize}
+    \item \textbf{API Call:} \texttt{GET /dashboard}
+    \item \textbf{Authentication:} The \texttt{Budget Service} verifies the JWT token by calling \texttt{POST /verify} on the \texttt{Auth Service}.
+    \item \textbf{Data Flow:} Upon successful verification, the dashboard is rendered with user-specific data.
+    \item \textbf{Response:} The user gains access to the budget management interface.
+  \end{itemize}
+
+  \item \textbf{Adding a New Budget:}
+  The user creates a monthly budget category with a specified amount.
+  \begin{itemize}
+    \item \textbf{API Call:} \texttt{POST /api/monthly-budgets} to the \texttt{Budget Service}.
+    \item \textbf{Payload:} \texttt{\{ "category": "<category>", "amount": <amount>, "month": "<YYYY-MM>" \}}
+    \item \textbf{Data Flow:} The \texttt{Budget Service} validates the JWT token, then directly inserts the budget data into the \textbf{MongoDB} database.
+    \item \textbf{Response:} Success $\rightarrow$ the budget is added to the user's dashboard with real-time UI updates.
+  \end{itemize}
+
+  \item \textbf{Tracking Daily Expenses:}
+  The user adds daily expenses with categories and descriptions.
+  \begin{itemize}
+    \item \textbf{API Call:} \texttt{POST /api/daily-expenses} to the \texttt{Budget Service}.
+    \item \textbf{Payload:} \texttt{\{ "description": "<description>", "amount": <amount>, "category": "<category>", "date": "<YYYY-MM-DD>" \}}
+    \item \textbf{Data Flow:} The \texttt{Budget Service} validates authentication and stores the expense in \textbf{MongoDB}.
+    \item \textbf{Response:} Success $\rightarrow$ the expense is added to the dashboard, and the pie chart is updated automatically.
+  \end{itemize}
+
+  \item \textbf{Searching and Filtering:}
+  The user searches for specific budgets or expenses using the built-in search functionality.
+  \begin{itemize}
+    \item \textbf{API Call:} \texttt{GET /api/monthly-budgets} or \texttt{GET /api/daily-expenses} with query parameters.
+    \item \textbf{Data Flow:} The \texttt{Budget Service} queries the \textbf{MongoDB} database with user-specific filters and search criteria.
+    \item \textbf{Response:} Success $\rightarrow$ filtered results are returned and displayed in the UI with real-time updates.
+  \end{itemize}
+
+  \item \textbf{User Logs Out:}
+  The user's session is terminated securely.
+  \begin{itemize}
+    \item \textbf{API Call:} \texttt{POST /logout}
+    \item \textbf{Data Flow:} The \texttt{Budget Service} calls the \texttt{Auth Service} to invalidate the JWT token and clear session data.
+    \item \textbf{Response:} The user is redirected to the login page, and all session data is cleared.
+  \end{itemize}
+\end{enumerate}
+
+% =========================================================
+\section{\textbf{Deployment \& Infrastructure}}
+The deployment strategy for the Budget Planner application leverages modern containerization and orchestration technologies to ensure reliable, scalable, and maintainable operations. The infrastructure design prioritizes automation, security, and operational excellence.
+
+\subsection{Containerization}
+Every component is packaged as a Docker image and hosted on Docker Hub under the \textbf{dilshaan} namespace, enabling seamless deployment without local builds. The containerization approach ensures consistent behavior across different environments, from development to production. Versioned images using semantic tags allow for independent rollouts and quick rollback capabilities, while multi-architecture support ensures compatibility across different hardware platforms.
+
+\subsection{Orchestration}
+Kubernetes serves as the orchestration platform, managing all workloads within the dedicated \textbf{budget-planner} namespace. The deployment strategy includes one Deployment and one Service per microservice plus MongoDB, ensuring clear resource boundaries and service isolation. Rolling updates minimize downtime during deployments, while readiness and liveness probes maintain service health and trigger automatic recovery. HorizontalPodAutoscaler resources enable CPU-based autoscaling for both Budget and Auth services, ensuring optimal resource utilization.
+
+\subsection{Networking}
+The networking architecture implements a secure, layered approach to service communication. The Budget Service is exposed via NodePort (default: 30000), making the UI accessible at \texttt{http://127.0.0.1:30000} while maintaining internal service isolation. Auth Service and MongoDB operate as internal ClusterIP services, communicating through Kubernetes DNS for secure, service-to-service communication. Stable service names (\texttt{budget-service:5000}, \texttt{auth-service:5001}, \texttt{mongodb:27017}) simplify service discovery and enable future enhancements such as Ingress controllers for TLS termination.
+
+\subsection{Persistence}
+Data persistence is ensured through MongoDB backed by a PersistentVolumeClaim (\texttt{mongodb-pvc}, 1Gi), guaranteeing data survival across pod restarts and rescheduling. The default StorageClass dynamically provisions underlying volumes, with the PVC achieving \texttt{Bound} status before MongoDB becomes \texttt{Ready}. User credentials, budgets, and expenses remain intact across redeployments, while MongoDB connection strings and credentials are securely injected via Kubernetes Secrets, maintaining security best practices.
+
+% =========================================================
+\section{\textbf{REST API Specification}}
+
+\subsection{Budget Service}
+\noindent\textbf{GET \texttt{/health}} \\
+\emph{Returns:} \texttt{200 OK}, \texttt{application/json}.
+\begin{lstlisting}[style=json]
+{"status":"ok"}
+\end{lstlisting}
+
+\noindent\textbf{POST \texttt{/api/monthly-budgets}} \\
+\emph{Body} (\texttt{application/json}):
+\begin{lstlisting}[style=json]
+{"month":"2023-10","amount":1500,"category":"Groceries"}
+\end{lstlisting}
+\emph{Returns:} \texttt{201 Created}, \texttt{application/json}.
+
+\noindent\textbf{GET \texttt{/api/monthly-budgets}} \\
+\emph{Returns:} \texttt{200 OK}, \texttt{application/json}.
+\begin{lstlisting}[style=json]
+[
+  {"_id": "...", "user_id": "...", "month": "2023-10", "amount": 1500, "category": "Groceries"},
+  {"_id": "...", "user_id": "...", "month": "2023-10", "amount": 500, "category": "Entertainment"}
+]
+\end{lstlisting}
+
+\noindent\textbf{POST \texttt{/api/daily-expenses}} \\
+\emph{Body} (\texttt{application/json}):
+\begin{lstlisting}[style=json]
+{"date":"2023-10-26","amount":50,"category":"Coffee","description":"Morning coffee"}
+\end{lstlisting}
+\emph{Returns:} \texttt{201 Created}, \texttt{application/json}.
+
+\noindent\textbf{GET \texttt{/api/daily-expenses}} \\
+\emph{Returns:} \texttt{200 OK}, \texttt{application/json}.
+\begin{lstlisting}[style=json]
+[
+  {"_id": "...", "user_id": "...", "date": "2023-10-26", "amount": 50, "category": "Coffee", "description": "Morning coffee"},
+  {"_id": "...", "user_id": "...", "date": "2023-10-25", "amount": 120, "category": "Lunch", "description": "Restaurant lunch"}
+]
+\end{lstlisting}
+
+\subsection{Auth Service}
+\noindent\textbf{POST \texttt{/register}} \\
+\emph{Body} (\texttt{application/json}):
+\begin{lstlisting}[style=json]
+{"username":"alice","password":"StrongPassword123!"}
+\end{lstlisting}
+\emph{Returns:} \texttt{201 Created}, \texttt{application/json} with JWT tokens.
+
+\noindent\textbf{POST \texttt{/login}} \\
+\emph{Body} (\texttt{application/json}):
+\begin{lstlisting}[style=json]
+{"username":"alice","password":"StrongPassword123!"}
+\end{lstlisting}
+\emph{Returns:} \texttt{200 OK}, \texttt{application/json} with JWT tokens.
+
+\noindent\textbf{POST \texttt{/verify}} \\
+\emph{Body} (\texttt{application/json}):
+\begin{lstlisting}[style=json]
+{"token":"eyJhbGciOiJIUzI1Ni..."}
+\end{lstlisting}
+\emph{Returns:} \texttt{200 OK} on valid token, \texttt{401 Unauthorized} otherwise.
+
+\noindent\textbf{POST \texttt{/refresh}} \\
+\emph{Body} (\texttt{application/json}):
+\begin{lstlisting}[style=json]
+{"refresh_token":"eyJhbGciOiJIUzI1Ni..."}
+\end{lstlisting}
+\emph{Returns:} \texttt{200 OK}, \texttt{application/json} with new access token.
+
+\noindent\textbf{POST \texttt{/logout}} \\
+\emph{Returns:} \texttt{200 OK} on success.
+
+\section{\textbf{Architecture Diagram}}
+All components communicate over ClusterIP Services and in-cluster DNS. Only the Budget Service (UI) is exposed to clients via NodePort. This pattern minimizes the public attack surface and keeps internal concerns private behind the gateway.
+The architecture diagram is shown in \hyperref[fig:arch]{Figure-1}.\\
+\textbf{Patterns used}
+\begin{itemize}
+  \item Microservices architecture with clear service boundaries.
+  \item Stateless microservices (Budget and Auth services) for independent scaling.
+  \item Database-per-service concept (Auth owns MongoDB for user data, Budget uses MongoDB for budget/expense data).
+  \item Persistent storage (PVC) for MongoDB across pod restarts.
+  \item External access via NodePort (no extra ingress needed).
+  \item JWT-based authentication and authorization.
+  \item Configuration management via Kubernetes ConfigMaps and Secrets.
+\end{itemize}
+
+% =========================================================
+\section{\textbf{Security Discussions and Mitigations)}}
+Security is implemented pragmatically for classroom scope and discussed for production hardening.
+
+\subsection{Implemented Now}
+\begin{itemize}
+  \item \textbf{Secrets for configuration:} The MongoDB connection string (URI) and other sensitive credentials are stored as Kubernetes \emph{Secrets} and injected into relevant services.
+  \item \textbf{Surface reduction:} Only \emph{Budget Service} is exposed via NodePort; all other services are internal ClusterIP.
+  \item \textbf{Non-sensitive health endpoint:} \texttt{/health} enables probes without leaking data.
+  \item \textbf{Password Hashing:} User passwords are hashed using \texttt{bcrypt} before storage in MongoDB.
+  \item \textbf{JWT Authentication:} JSON Web Tokens are used for secure session management and API authorization.
+  \item \textbf{Rate Limiting:} Implemented in the Auth Service to prevent brute-force attacks.
+\end{itemize}
+
+\subsection{Threats and Recommended Mitigations}
+\begin{itemize}
+  \item \textbf{Credential compromise:} Implement stronger password policies, enforce multi-factor authentication (MFA), and regularly rotate JWT signing keys.
+  \item \textbf{In-cluster lateral movement:} Tighten NetworkPolicies among all services (e.g., restrict Budget Service to only talk to Auth Service and MongoDB); run containers as non-root; drop Linux capabilities; set seccomp/AppArmor.
+  \item \textbf{Data in transit:} Terminate TLS at an Ingress; use \texttt{cert-manager}; consider mTLS between services if needed.
+  \item \textbf{Abuse / brute force:} Enhance rate limiting with adaptive algorithms; add lockout/backoff mechanisms; optionally deploy a Web Application Firewall (WAF) at the Ingress or gateway.
+  \item \textbf{Supply chain risk:} Pin Docker image tags to specific versions; run vulnerability scans on all images; enable admission controls (image signing/verification).
+\end{itemize}
+
+% =========================================================
+\section{\textbf{Benefits and Challenges of Architecture Design}}
+
+\subsection{Architecture Benefits}
+The microservices architecture provides several key advantages:
+
+\subsubsection{Technical Benefits}
+\begin{itemize}
+  \item \textbf{Independent Development and Deployment:} Each microservice can be developed, tested, and deployed independently, enabling faster development cycles and reduced coordination overhead.
+  \item \textbf{Technology Diversity:} Each service can use the most appropriate technology stack for its specific requirements (Flask for web services, MongoDB for document storage).
+  \item \textbf{Fault Isolation:} Failure in one service (e.g., Auth Service) does not directly impact other services, improving overall system resilience.
+  \item \textbf{Independent Scaling:} Services can be scaled horizontally based on their specific load patterns (e.g., scale Budget Service during high UI traffic, Auth Service during peak login times).
+  \item \textbf{Clear Service Boundaries:} Each service has a well-defined responsibility, making the codebase easier to understand, maintain, and evolve.
+\end{itemize}
+
+\subsubsection{Operational Benefits}
+\begin{itemize}
+  \item \textbf{Container Portability:} Docker images enable consistent deployment across different environments (development, staging, production).
+  \item \textbf{Kubernetes Orchestration:} Automated deployment, scaling, and management of containerized services.
+  \item \textbf{Persistent Data Storage:} PVC ensures data survival across pod restarts and infrastructure changes.
+  \item \textbf{Service Discovery:} Kubernetes DNS provides automatic service discovery within the cluster.
+  \item \textbf{Configuration Management:} Kubernetes Secrets and ConfigMaps enable secure and flexible configuration management.
+\end{itemize}
+
+\subsection{Architecture Challenges}
+Despite the benefits, the microservices architecture introduces several challenges:
+
+\subsubsection{Complexity Challenges}
+\begin{itemize}
+  \item \textbf{Distributed System Complexity:} Managing multiple services increases operational complexity compared to monolithic applications.
+  \item \textbf{Network Latency:} Inter-service communication introduces network overhead and potential latency issues.
+  \item \textbf{Data Consistency:} Maintaining data consistency across services becomes more complex without distributed transactions.
+  \item \textbf{Service Dependencies:} Services depend on each other, creating potential cascading failure scenarios.
+\end{itemize}
+
+\subsubsection{Operational Challenges}
+\begin{itemize}
+  \item \textbf{Monitoring and Observability:} Tracking requests across multiple services requires distributed tracing and centralized logging.
+  \item \textbf{Deployment Coordination:} Coordinating deployments across multiple services while maintaining system stability.
+  \item \textbf{Configuration Drift:} Multiple services with different configurations can lead to inconsistencies over time.
+  \item \textbf{Resource Management:} Each service requires its own resources, potentially leading to resource fragmentation.
+\end{itemize}
+
+\subsection{Security Discussion}
+Security is a critical aspect of the microservices architecture, with both implemented measures and areas for improvement.
+
+\subsubsection{Implemented Security Measures}
+\begin{itemize}
+  \item \textbf{JWT Authentication:} Stateless authentication using JSON Web Tokens with expiration and refresh mechanisms.
+  \item \textbf{Password Security:} bcrypt hashing with salt for secure password storage.
+  \item \textbf{Rate Limiting:} API protection against brute force attacks and abuse.
+  \item \textbf{Network Isolation:} Internal services use ClusterIP, reducing attack surface.
+  \item \textbf{Secrets Management:} Sensitive data stored in Kubernetes Secrets.
+  \item \textbf{Input Validation:} API endpoints validate input data to prevent injection attacks.
+\end{itemize}
+
+\subsubsection{Security Challenges and Mitigations}
+\begin{itemize}
+  \item \textbf{Challenge: Credential Compromise}
+  \textbf{Mitigation:} Implement stronger password policies, multi-factor authentication, and regular JWT key rotation.
+  
+  \item \textbf{Challenge: Inter-service Communication Security}
+  \textbf{Mitigation:} Implement mTLS between services and network policies to restrict communication.
+  
+  \item \textbf{Challenge: Data in Transit}
+  \textbf{Mitigation:} Terminate TLS at ingress, use cert-manager for certificate management.
+  
+  \item \textbf{Challenge: Supply Chain Security}
+  \textbf{Mitigation:} Pin image tags, run vulnerability scans, implement image signing and verification.
+\end{itemize}
+
+\subsection{Mitigation Strategies}
+To address the identified challenges, several mitigation strategies have been implemented and planned:
+
+\subsubsection{Implemented Mitigations}
+\begin{itemize}
+  \item \textbf{Health Checks:} Readiness and liveness probes ensure traffic is routed only to healthy pods.
+  \item \textbf{Rolling Updates:} Zero-downtime deployments with automatic rollback on failure.
+  \item \textbf{Horizontal Pod Autoscaler:} Automatic scaling based on CPU usage metrics.
+  \item \textbf{Persistent Storage:} PVC ensures data persistence across pod restarts.
+  \item \textbf{Service Discovery:} Kubernetes DNS eliminates hardcoded service addresses.
+  \item \textbf{Configuration Externalization:} Secrets and ConfigMaps for secure configuration management.
+\end{itemize}
+
+\subsubsection{Planned Mitigations}
+\begin{itemize}
+  \item \textbf{Circuit Breakers:} Implement circuit breaker pattern to prevent cascading failures.
+  \item \textbf{Retry and Timeout Policies:} Robust error handling and retry mechanisms.
+  \item \textbf{Distributed Tracing:} Implement Jaeger or Zipkin for request tracing across services.
+  \item \textbf{Centralized Logging:} ELK stack for log aggregation and analysis.
+  \item \textbf{Monitoring and Alerting:} Prometheus and Grafana for metrics and alerting.
+  \item \textbf{CI/CD Pipeline:} Automated testing, building, and deployment processes.
+\end{itemize}
+
+% =========================================================
+\section{\textbf{Discussion}}
+This project successfully demonstrates the practical implementation of microservices architecture on Kubernetes, showcasing the core principles of cloud-native development in a real-world application context. The Budget Planner application effectively illustrates how microservices can be orchestrated to create a cohesive user experience while maintaining clear separation of concerns and operational resilience.
+
+The implementation showcases several key cloud-native patterns that are essential for modern application development. The API Gateway functionality through the Budget Service demonstrates how to create a unified entry point while maintaining service independence. Stateless service design enables horizontal scaling and improves system resilience, while persistent data storage ensures reliability across infrastructure changes. The JWT-based authentication system provides a modern, secure approach to user management, and the MongoDB integration demonstrates effective database-per-service patterns.
+
+From a practical perspective, the modular architecture enables independent development and deployment cycles, allowing different teams to work on separate services simultaneously. This approach significantly improves development velocity and reduces coordination overhead, making it particularly valuable for larger development teams and complex business requirements. The containerization strategy ensures consistent behavior across different environments, while Kubernetes orchestration provides automated scaling and self-healing capabilities.
+
+However, it's important to acknowledge that this project represents a simplified model of a true cloud-production environment. A real-world application would benefit from advanced traffic management through service meshes, automated CI/CD pipelines for deployments, centralized logging and monitoring systems, and more sophisticated security measures including network policies and service-to-service encryption. These enhancements would be necessary for production deployment but are beyond the scope of this educational demonstration.
+
+% =========================================================
+\section{\textbf{Future Enhancements}}
+While the current system works as a classroom proof-of-concept, several focused upgrades would make it production-ready. On the security side, enhance password policies, implement multi-factor authentication, and terminate HTTPS at an Ingress with TLS certificates (e.g., using cert-manager). Store sensitive settings in an external vault solution, tighten NetworkPolicies to deny-all by default, and consider advanced rate-limiting/WAF at the edge. For scalability and resilience, add retries/timeouts and a circuit-breaker between services, introduce a small cache (e.g., Redis) for frequently accessed data, and implement MongoDB replication for high availability and automated backups. For operations, add Prometheus/Grafana dashboards and centralized logs (EFK/ELK) with alerts for proactive monitoring. Finally, implement a robust CI/CD pipeline (e.g., GitHub Actions) to automate building, scanning, signing, and deploying images, reducing drift and human error.
+
+% =========================================================
+\section{\textbf{Business Implications of Architecture Decisions}}
+The microservices architecture decisions have significant business implications that impact both technical and organizational aspects:
+
+\subsection{Development and Maintenance Benefits}
+\begin{itemize}
+  \item \textbf{Faster Time to Market:} Independent service development enables parallel development cycles, reducing overall project delivery time.
+  \item \textbf{Reduced Development Risk:} Changes to one service do not impact others, reducing the risk of introducing bugs across the entire system.
+  \item \textbf{Team Autonomy:} Different teams can work on different services independently, improving productivity and reducing coordination overhead.
+  \item \textbf{Technology Flexibility:} Each service can use the most appropriate technology for its requirements, enabling better performance and maintainability.
+\end{itemize}
+
+\subsection{Operational and Cost Benefits}
+\begin{itemize}
+  \item \textbf{Resource Optimization:} Services can be scaled independently based on actual usage patterns, optimizing resource utilization and costs.
+  \item \textbf{Improved Reliability:} Fault isolation means that failures in one service do not bring down the entire application.
+  \item \textbf{Deployment Flexibility:} Services can be updated independently, enabling continuous deployment and faster feature delivery.
+  \item \textbf{Cloud-Native Benefits:} Containerization and Kubernetes orchestration provide portability across different cloud providers.
+\end{itemize}
+
+\subsection{Challenges and Mitigation Costs}
+\begin{itemize}
+  \item \textbf{Increased Complexity:} Managing multiple services requires additional operational overhead and expertise.
+  \item \textbf{Network Overhead:} Inter-service communication introduces latency and potential failure points.
+  \item \textbf{Monitoring Costs:} Distributed systems require more sophisticated monitoring and observability tools.
+  \item \textbf{Development Overhead:} Initial setup and configuration of microservices infrastructure requires additional time and resources.
+\end{itemize}
+
+% =========================================================
+\section{\textbf{Conclusion}}
+The \emph{Budget Planner} application represents a successful implementation of microservices architecture principles, demonstrating how modern cloud-native technologies can be effectively combined to create a robust, scalable, and maintainable application. Through this project, we have validated the practical benefits of microservices architecture while acknowledging the inherent complexities of distributed systems.
+
+The application successfully meets all assignment requirements by implementing two distinct microservices (Budget Service and Auth Service) plus a MongoDB database, each with comprehensive REST API endpoints. The system is fully deployable on Kubernetes, accessible via web browser through NodePort services, and demonstrates independent horizontal scaling capabilities. All container images are published on Docker Hub, and the database utilizes persistent storage to ensure data survival across infrastructure restarts.
+
+From a technical perspective, the project showcases the practical implementation of modern cloud-native design patterns including microservices separation, containerization, orchestration, and security best practices. The JWT-based authentication system, bcrypt password hashing, and rate limiting demonstrate contemporary security approaches, while the comprehensive API documentation and detailed deployment manifests ensure operational excellence.
+
+The architecture successfully balances the benefits of independent scaling, fault isolation, and technology diversity against the challenges of distributed system complexity and operational overhead. The security implementation provides a solid foundation with clear paths for production hardening and future enhancements. The modular design enables independent development and deployment cycles, making it particularly valuable for larger development teams and complex business requirements.
+
+This project demonstrates that microservices architecture, when properly implemented with appropriate tooling and practices, can provide significant advantages in terms of scalability, maintainability, and operational resilience. The successful deployment and operation of the Budget Planner application validates the effectiveness of the chosen architecture and technology stack for modern application development.
+
+\vspace{1mm}
+\noindent\textbf{Configuration Management Repository: }
+\href{https://github.com/md-d-cdr-4304/budget-planner}{GitHub Repository}\\
+\noindent\textbf{Video Recording: } [To be provided - 5-10 minute demonstration covering project overview, microservices functionality, Kubernetes deployment, web interface access, log output, and YAML configuration walkthrough]
+
+% =========================================================
+\section{\textbf{References}}
+\begin{itemize}
+    \item \textbf{Project Repository}: The complete source code and Kubernetes manifests for this project are available on GitHub. (\href{https://github.com/md-d-cdr-4304/budget-planner}{https://github.com/md-d-cdr-4304/budget-planner})
+    \item \textbf{Video Demonstration}: A video walkthrough of the application's deployment and functionality. [To be provided]
+    \item \textbf{Kubernetes}: The container orchestration platform. (\href{https://kubernetes.io/}{https://kubernetes.io/})
+    \item \textbf{Docker}: Used for containerization of all services. (\href{https://www.docker.com/}{https://www.docker.com/})
+    \item \textbf{Flask}: The Python micro-framework used to build the web services. (\href{https://flask.palletsprojects.com/}{https://flask.palletsprojects.com/})
+    \item \textbf{MongoDB}: The document-based NoSQL database for data persistence. (\href{https://www.mongodb.com/}{https://www.mongodb.com/})
+    \item \textbf{JWT}: JSON Web Tokens for secure authentication. (\href{https://jwt.io/}{https://jwt.io/})
+    \item \textbf{bcrypt}: Password hashing library for secure credential storage. (\href{https://pypi.org/project/bcrypt/}{https://pypi.org/project/bcrypt/})
+    \item \textbf{Chart.js}: JavaScript library for data visualization. (\href{https://www.chartjs.org/}{https://www.chartjs.org/})
+    \item \textbf{Bootstrap}: Frontend framework for responsive web design. (\href{https://getbootstrap.com/}{https://getbootstrap.com/})
+\end{itemize}
+\balance
+
+\vspace{1cm}
+\begin{figure*}[!b]
+  \centering
+  \includegraphics[width=\textwidth]{Screenshot 2025-09-26 154325.png}% <-- your PNG filename
+  \caption{Runtime architecture in Kubernetes: Browser $\rightarrow$ NodePort Service $\rightarrow$ Budget Service (UI/API) $\rightarrow$ Auth Service (JWT verification) $\rightarrow$ MongoDB (data storage). The Budget Service is the only public entry; internal services use ClusterIP. HPAs enable independent scaling; Kubernetes Secrets manage credentials.}
+  \label{fig:arch}
+\end{figure*}
+
+\end{document}
