@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: budget-planner
+data:
+  # MongoDB connection string
+  mongo-uri: "mongodb://admin:password123@mongo-service:27017/budget_planner?authSource=admin"
+  
+  # Application configuration
+  app-name: "Budget Planner"
+  app-version: "1.0.0"
+  
+  # Environment
+  environment: "production"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init-script
+  namespace: budget-planner
+data:
+  init-mongo.js: |
+    // MongoDB initialization script
+    db = db.getSiblingDB('budget_planner');
+    
+    // Create collections
+    db.createCollection('users');
+    db.createCollection('monthly_budgets');
+    db.createCollection('daily_expenses');
+    
+    // Create indexes for better performance
+    db.users.createIndex({ "username": 1 }, { unique: true });
+    db.monthly_budgets.createIndex({ "user_id": 1, "month": 1 });
+    db.daily_expenses.createIndex({ "user_id": 1, "date": 1 });
+    
+    print("MongoDB initialization completed successfully!");
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: budget-planner
+type: Opaque
+data:
+  # Base64 encoded secret key
+  # In production, use proper secret management
+  secret-key: ZGVtby1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudA==
+
+
