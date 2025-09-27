@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: budget-planner
-  labels:
-    name: budget-planner
-    app: budget-planner
-
-

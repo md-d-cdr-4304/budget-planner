@@ -19,8 +19,8 @@ metadata:
   name: app-config
   namespace: budget-planner
 data:
-  # MongoDB connection string
-  mongo-uri: "mongodb://admin:password123@mongo-service:27017/budget_planner?authSource=admin"
+  # MongoDB connection string (credentials from Secret)
+  mongo-uri: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongo-service:27017/budget_planner?authSource=admin"
   
   # Application configuration
   app-name: "Budget Planner"
@@ -62,9 +62,9 @@ metadata:
   namespace: budget-planner
 type: Opaque
 data:
-  # Base64 encoded secret key
-  # In production, use proper secret management
-  secret-key: ZGVtby1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudA==
+  # Base64 encoded secret key for JWT signing
+  # Generated: BudgetPlanner2024!SecureKey
+  secret-key: QnVkZ2V0UGxhbm5lcjIwMjQhU2VjdXJlS2V5
 
 ---
 # MongoDB Secret
@@ -75,15 +75,15 @@ metadata:
   namespace: budget-planner
 type: Opaque
 data:
-  # Base64 encoded values
-  # username: admin
-  # password: password123
-  # root-username: admin
-  # root-password: password123
-  username: YWRtaW4=
-  password: cGFzc3dvcmQxMjM=
-  root-username: YWRtaW4=
-  root-password: cGFzc3dvcmQxMjM=
+  # Base64 encoded secure credentials
+  # username: mongo_admin
+  # password: MongoDB2024!SecurePass
+  # root-username: mongo_admin  
+  # root-password: MongoDB2024!SecurePass
+  username: bW9uZ29fYWRtaW4=
+  password: TW9uZ29EQjIwMjQhU2VjdXJlUGFzcw==
+  root-username: bW9uZ29fYWRtaW4=
+  root-password: TW9uZ29EQjIwMjQhU2VjdXJlUGFzcw==
 
 ---
 # MongoDB PersistentVolumeClaim
@@ -228,6 +228,18 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: secret-key
+        - name: MONGO_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: username
+        - name: MONGO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: password
+        - name: MONGO_URI
+          value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongo-service:27017/budget_planner?authSource=admin"
         - name: DEBUG
           value: "false"
         resources:
@@ -323,11 +335,18 @@ spec:
               key: secret-key
         - name: AUTH_SERVICE_URL
           value: "http://auth-service:5001"
-        - name: MONGO_URI
+        - name: MONGO_USERNAME
           valueFrom:
-            configMapKeyRef:
-              name: app-config
-              key: mongo-uri
+            secretKeyRef:
+              name: mongo-secret
+              key: username
+        - name: MONGO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: password
+        - name: MONGO_URI
+          value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongo-service:27017/budget_planner?authSource=admin"
         - name: DEBUG
           value: "false"
         resources:
