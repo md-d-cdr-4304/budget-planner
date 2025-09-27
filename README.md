@@ -113,6 +113,24 @@ budget-planner/
    ```
    **Why this step?** Provides the external URL to access the Budget Planner web interface. The NodePort service exposes the Budget Service externally while keeping other services internal for security.
 
+## 🌐 **Current Service URLs**
+
+After deployment, get your live URLs with these commands:
+
+```bash
+# Get Budget Service URL (Web Interface)
+minikube service budget-nodeport -n budget-planner --url
+
+# Get Auth Service URL (API Testing)
+minikube service auth-nodeport -n budget-planner --url
+```
+
+**Example Output:**
+- **Base URL (Budget Service):** `http://127.0.0.1:47027`
+- **Auth URL (Auth Service):** `http://127.0.0.1:47036`
+
+**Note:** NodePort URLs change each time you restart minikube. Run the commands above to get current URLs.
+
 ### **Security Features**
 - **Kubernetes Secrets:** All credentials stored securely with base64 encoding
 - **Strong Passwords:** MongoDB and JWT secrets use complex passwords
