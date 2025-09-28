@@ -1,4 +1,4 @@
-# Budget Planner — Kubernetes Microservices
+# Budget Planner - Kubernetes Microservices Application
 
 A production-ready microservices application for budget and expense management. Deploy it on Kubernetes with a single command set that works on both Windows and macOS.
 
