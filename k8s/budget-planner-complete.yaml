@@ -127,16 +127,6 @@ spec:
         ports:
         - containerPort: 27017
         env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: root-username
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: root-password
         - name: MONGO_INITDB_DATABASE
           value: "budget_planner"
         volumeMounts:
@@ -228,18 +218,8 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: secret-key
-        - name: MONGO_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: username
-        - name: MONGO_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: password
         - name: MONGO_URI
-          value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongo-service:27017/budget_planner?authSource=admin"
+          value: "mongodb://mongo-service:27017/budget_planner"
         - name: DEBUG
           value: "false"
         resources:
@@ -335,18 +315,8 @@ spec:
               key: secret-key
         - name: AUTH_SERVICE_URL
           value: "http://auth-service:5001"
-        - name: MONGO_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: username
-        - name: MONGO_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: password
         - name: MONGO_URI
-          value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongo-service:27017/budget_planner?authSource=admin"
+          value: "mongodb://mongo-service:27017/budget_planner"
         - name: DEBUG
           value: "false"
         resources:
